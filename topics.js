@@ -223,7 +223,7 @@ function latestTopicMessage(id){
     who:'assistant',topic:id,text:topicSummary(id),artifact:id==='leo'?'proposal':id==='call'?'prep':null,seeded:true
   };
 }
-function canUseFeed(){return !drawerOpen&&variant!=='asked'&&!screens.length&&(mode==='voice'||mode==='brief'&&state.started);}
+function canUseFeed(){return !drawerOpen&&variant!=='asked'&&!screens.length&&(mode==='feed'||mode==='voice'&&isNewStudy()||mode==='brief'&&state.started);}
 function browseTopic(direction){
   if(!canUseFeed())return false;
   const topics=feedTopics(),index=/^Your (?:routines|topics)/.test(state.context)?(direction>0?-1:topics.length):topics.findIndex(t=>t.id===state.currentTopic),topic=topics[index+direction];
@@ -235,8 +235,8 @@ function browseTopic(direction){
   state.context=`${topic.company} · ${topic.title}`;
   render();saveSession();return true;
 }
-function openConversation(){stopMedia();closeScreens();mode='thread';render();saveSession();}
-function returnToLatest(){stopMedia();mode='voice';const latest=/^Your (?:routines|topics)/.test(state.context)?state.history.findLast(m=>m.who==='assistant'&&m.topic===null)||latestTopicMessage(state.currentTopic):latestTopicMessage(state.currentTopic);state.text=latest.text;state.artifact=latest.artifact||null;state.lastAction=latest.action||null;render();saveSession();}
+function openConversation(){stopMedia();closeScreens();if(mode!=='thread')state.latestMode=mode;mode='thread';render();saveSession();}
+function returnToLatest(){stopMedia();mode=['voice','brief','feed'].includes(state.latestMode)?state.latestMode:'voice';const latest=/^Your (?:routines|topics)/.test(state.context)?state.history.findLast(m=>m.who==='assistant'&&m.topic===null)||latestTopicMessage(state.currentTopic):latestTopicMessage(state.currentTopic);state.text=latest.text;state.artifact=latest.artifact||null;state.lastAction=latest.action||null;render();saveSession();}
 function topicHeader(history=false){
   const topic=state.topics[state.currentTopic];
   const general=/^Your (?:routines|topics)/.test(state.context);

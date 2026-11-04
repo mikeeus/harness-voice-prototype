@@ -1,7 +1,7 @@
 'use strict';
 const STUDIES={
   classic:{},
-  dots:{caption:'04 / Left-side dots — one topic, one reply, a quiet position marker.',observation:'Compare this with the original arrows. The dots sit on the left; swiping only changes the topic. History and prepared work remain available.',prompts:['I also need to plan the team offsite','Show my chat history','Show my topics','Whenever I’m mentioned in Telegram, draft a reply. Only interrupt if urgent.','Show my routines']},
+  dots:{caption:'04 / Left-side dots — one topic, one reply, a quiet position marker.',observation:'Compare this with the Topic feed variation’s arrows. The dots sit on the left; swiping only changes the topic. History and prepared work remain available.',prompts:['I also need to plan the team offsite','Show my chat history','Show my topics','Whenever I’m mentioned in Telegram, draft a reply. Only interrupt if urgent.','Show my routines']},
   across:{caption:'05 / One thing at a time — browse the work, then decide what to do.',observation:'Swipe left or right through today’s work. Browsing changes no status. Set aside and Mark handled are separate actions, with Undo and an overview to recover anything.',prompts:['Show everything I’m working on','Put this aside','Mark this handled','Show my routines']},
   drawer:{caption:'06 / Topics at your side — swipe right to find a thread.',observation:'Compare a searchable topics sidebar with an overview requested in conversation. A small personal greeting and an icon-only microphone keep the main screen quiet.',prompts:['Show my topics','Let’s talk about hiring','I also need to plan the team offsite','Back to Leo','Show my routines']},
   asked:{caption:'07 / Just ask — the overview appears when it is useful.',observation:'No permanent topics navigation. Ask for everything you’re working on and get a prioritized overview. Standing instructions are created in conversation and audited in plain language.',prompts:['Show everything I’m working on','Show my topics','Prep me for Rachel’s call','Whenever I’m mentioned in Telegram, draft a reply. Only interrupt if urgent.','Show my routines']}
@@ -26,7 +26,7 @@ function selectTopicQuietly(id){
 }
 function chooseStudy(value){
   if(!Object.hasOwn(STUDIES,value))return;
-  closeTopicDrawer();closeScreens();stopMedia();variant=value;mode='voice';ensureStudyState();
+  closeTopicDrawer();closeScreens();stopMedia();variant=value;mode='voice';state.latestMode='voice';ensureStudyState();
   if(value==='across'&&!feedTopics().some(t=>t.id===state.currentTopic)){
     if(feedTopics().length)return selectTopicQuietly(feedTopics()[0].id);
   }

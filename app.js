@@ -2,9 +2,10 @@
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const modes = {
-  voice: {caption:'01 / Just talk — the latest thought, with its topic.', observation:'Swipe up or down between topics. History opens the full discussion. Mention another piece of work to bring a new topic to the front.'},
+  voice: {caption:'01 / Just talk — one relevant thought, with room to respond.', observation:'A quiet, centered response. Ask for detail, open the topic, or switch to A conversation when you want the history.'},
   thread: {caption:'02 / A conversation — speak, skim, or pick up where you left off.', observation:'The conversation is the memory. Test whether visible history helps you regain context without becoming another feed.'},
-  brief: {caption:'03 / The quiet brief — a little orientation before you talk.', observation:'A small amount of structure can reassure. Test whether the glance adds confidence or simply delays the conversation.'}
+  brief: {caption:'03 / The quiet brief — a little orientation before you talk.', observation:'A small amount of structure can reassure. Test whether the glance adds confidence or simply delays the conversation.'},
+  feed: {caption:'08 / Topic feed — the latest thought, with its topic.', observation:'Swipe up or down between topics, or use the arrows. History opens the full discussion. Mention another piece of work to bring a new topic to the front.'}
 };
 const scenarios = {
   morning: {context:'Halcyon · proposal', start:'Morning. Leo’s proposal is the one thing I’d clear first. I’ve drafted it. Want the short version?', note:'The proposal is overdue. A call is at 10. Another decision can wait until this afternoon.', title:'One thing to clear first.', brief:'Leo is waiting on the proposal you promised. I’ve drafted it, ready to review.', bottom:'10:00 · Rachel & Tom\nThis afternoon · Server funds decision', prompts:['Why that first?','Give me the short version','Show me the proposal','What else needs me?']},
@@ -76,11 +77,13 @@ function render(){
   }else if(mode==='brief'&&!state.started){
     const s=scenarios[scenario];
     body.innerHTML=`<div class="brief-view"><p class="brief-date">Wednesday, November 4</p><h2>${s.title}</h2><p>${s.brief}</p><div class="brief-focus"><span class="eyebrow">${proposalMoment?'MY SUGGESTION':scenario==='change'?'WHAT CHANGED':'IN THE BACKGROUND'}</span><p>${proposalMoment?'Let’s get Leo’s proposal off your mind.':scenario==='change'?'Take the time back. I’ll get you ready before the call.':'Dana’s list is on my radar. It can wait until tomorrow.'}</p>${proposalMoment?artifactLink('proposal'):scenario==='change'?artifactLink('prep'):''}</div><div class="brief-bottom">${s.bottom.split('\n').map(esc).join('<br>')}</div></div>`;
+  }else if(mode==='voice'){
+    body.innerHTML=`<div class="voice-view"><div class="presence" aria-hidden="true"><img src="assets/symbol-plum.svg" alt=""></div><button class="context-line context-button" ${/^Your routines/.test(state.context)?'data-context-tab="routines"':/^Your topics/.test(state.context)?'data-context-tab="topics"':`data-topic="${esc(state.currentTopic)}"`}>${esc(state.context)} ${icon('next')}</button><p class="spoken-text ${state.text.length>185?'long':''}" aria-live="polite">${esc(state.text)}</p>${state.artifact?artifactLink(state.artifact):''}${state.lastAction==='review'?'<button class="approval-inline" data-open="approval">Review draft ↗</button>':''}${receipt()}</div>`;
   }else{
     body.innerHTML=`${topicHeader()}<div class="latest-message"><p class="latest-label">Latest from Harness</p><div class="latest-copy"><p class="spoken-text ${state.text.length>185?'long':''}" aria-live="polite">${esc(state.text)}</p>${state.artifact?artifactLink(state.artifact):''}${state.lastAction==='review'?'<button class="approval-inline" data-open="approval">Review draft ↗</button>':''}${receipt()}</div></div>${topicPager()}`;
 
   }
-  body.classList.toggle('is-feed',mode!=='thread'&&(mode==='voice'||state.started));
+  body.classList.toggle('is-feed',mode==='feed'||mode==='voice'&&isNewStudy()||mode==='brief'&&state.started);
   body.classList.toggle('feed-scrolls',mode!=='thread'&&!!$('.latest-copy')&&$('.latest-copy').scrollHeight>$('.latest-copy').clientHeight+2);
   renderControls();
 }
@@ -185,7 +188,7 @@ function startMic(){
 function openNotes(){openScreen('DESIGN NOTES','The assistant carries the structure.',`<p>These studies explore how much the owner needs to see while talking with an assistant. Conversation carries the interaction; visual work appears when useful.</p><h3>01 / Just talk · recommended starting point</h3><p>One relevant thought, one question, with a persistent caption. Best for being on the move. Test whether people still feel oriented when the backlog is hidden.</p><h3>02 / A conversation</h3><p>Same assistant, with a visible transcript. Best for resuming a discussion and switching between speaking and typing. Risk: a long feed can bring back the reading burden.</p><h3>03 / The quiet brief</h3><p>A few lines orient you before the first spoken turn. Best for checking in silently. Once you reply, it becomes a voice session. Risk: extra information can become a second task list.</p><h3>What the assistant remembers</h3><p>What has been discussed in this session, whether you’ve recorded a send, what is waiting on someone else, and corrections to the plan. “What changed?” gives only the difference. “Why?” reveals context. No inference about your mental state is claimed.</p><h3>Keep the useful visuals</h3><p>Documents, call prep, sources and a day view open on request. They support the conversation. Draft review preserves an explicit exact-action gate.</p><h3>Useful next test</h3><p>Try each direction with the same scenario, without looking at the screen. Can you say what matters, explain why, correct a mistake and postpone something? Then ask to see a document. Compare confidence, effort and missed context.</p><p class="notice">Scripted interaction study. No AI model, accounts, background monitoring, actual reminders or real sending. Each reviewer’s demo state stays in their own browser. Resetting a moment clears it. Browser dictation is optional and may use a browser speech service.</p>`);}
 document.addEventListener('click',e=>{
   const command=e.target.closest('[data-command]');if(command){if(screens.at(-1)?.topic)useTopic(screens.at(-1).topic);if(screens.length)closeScreens();submit(command.dataset.command);return;}
-  const m=e.target.closest('button[data-mode]');if(m){stopMedia();closeTopicDrawer();closeScreens();variant='classic';mode=m.dataset.mode;render();saveSession();return;}
+  const m=e.target.closest('button[data-mode]');if(m){stopMedia();closeTopicDrawer();closeScreens();if(m.dataset.mode==='thread'&&mode!=='thread')state.latestMode=mode;variant='classic';mode=m.dataset.mode;if(mode!=='thread')state.latestMode=mode;render();saveSession();return;}
   const s=e.target.closest('[data-scenario]');if(s){scenario=s.dataset.scenario;reset();return;}
   const artifact=e.target.closest('[data-artifact]');if(artifact){artifact.dataset.artifact==='prep'?openPrep():openProposal();return;}
   if(e.target.closest('[data-open="approval"]'))return openApproval();
