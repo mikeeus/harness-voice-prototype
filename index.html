@@ -6,12 +6,14 @@
   <title>Harness — a little less to think about</title>
   <link rel="stylesheet" href="style.css">
   <script defer src="topics.js"></script>
+  <script defer src="explorations.js"></script>
   <script defer src="app.js"></script>
 </head>
 <body>
   <svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
     <symbol id="icon-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M7.5 3v4m9-4v4M3.5 10h17M8 14h2m4 0h2m-8 3.5h2"/></symbol>
     <symbol id="icon-topics" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><path d="M14 15h7m-7 5h5"/></symbol>
+    <symbol id="icon-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h11"/></symbol>
     <symbol id="icon-routine" viewBox="0 0 24 24"><path d="M20 7a8 8 0 0 0-14-2L3 8m0-5v5h5m-4 9a8 8 0 0 0 14 2l3-3m0 5v-5h-5"/></symbol>
     <symbol id="icon-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
     <symbol id="icon-library" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="17" rx="2.5"/><path d="M8.5 7h7m-7 4h7m-7 4h4M2 7v12a4 4 0 0 0 4 4"/></symbol>
@@ -34,13 +36,21 @@
   <header class="studio-header"><a class="brand" href="./"><img src="assets/symbol-ink.svg" alt="">harness<span>experience studies</span></a><div class="header-right"><span class="private-dot"></span> Interactive prototype </div></header>
   <main class="studio">
     <aside class="direction">
-      <p class="eyebrow">VOICE FIRST / 01—03</p>
+      <p class="eyebrow">VOICE FIRST / 7 EXPLORATIONS</p>
       <h1>A little less<br>to think about.</h1>
       <p class="intro">An assistant that knows what matters.<br>Says just enough. And lets you get on<br class="desktop-break"> with your day.</p>
+      <p class="originals-label">EXISTING VARIANTS</p>
       <nav class="concepts" aria-label="Experience direction">
         <button data-mode="voice" aria-pressed="true"><span class="number">01</span><span><strong>Just talk</strong><small>One thought at a time</small></span><span class="mode-arrow">↗</span></button>
         <button data-mode="thread" aria-pressed="false"><span class="number">02</span><span><strong>A conversation</strong><small>Your place to come back to</small></span><span class="mode-arrow">↗</span></button>
         <button data-mode="brief" aria-pressed="false"><span class="number">03</span><span><strong>The quiet brief</strong><small>A glance, then a conversation</small></span><span class="mode-arrow">↗</span></button>
+      </nav>
+      <p class="exploration-label">CALL EXPLORATIONS</p>
+      <nav class="concepts explorations" aria-label="Call explorations">
+        <button data-study="dots" aria-pressed="false"><span class="number">04</span><span><strong>Left-side dots</strong><small>Swipe vertically between topics</small></span><span class="mode-arrow">↗</span></button>
+        <button data-study="across" aria-pressed="false"><span class="number">05</span><span><strong>One thing at a time</strong><small>Swipe across today’s work</small></span><span class="mode-arrow">↗</span></button>
+        <button data-study="drawer" aria-pressed="false"><span class="number">06</span><span><strong>Topics at your side</strong><small>A sidebar when you want it</small></span><span class="mode-arrow">↗</span></button>
+        <button data-study="asked" aria-pressed="false"><span class="number">07</span><span><strong>Just ask</strong><small>The overview comes to you</small></span><span class="mode-arrow">↗</span></button>
       </nav>
       <div class="direction-footer"><span>THE EXPLORATION</span><p>What if the home screen was a relationship, rather than a list?</p><button class="text-link" id="open-notes">Read the design rationale ↗</button></div>
     </aside>
@@ -48,8 +58,18 @@
     <section class="preview" aria-label="Interactive mobile prototype">
       <div class="phone" id="phone">
         <div class="device-status" aria-hidden="true"><span>9:41</span><span class="island"></span><span class="status-icons"><svg aria-hidden="true" class="icon"><use href="#icon-signal"/></svg><svg aria-hidden="true" class="icon"><use href="#icon-wifi"/></svg><svg class="icon battery"><use href="#icon-battery"/></svg></span></div>
-        <header class="app-header"><button class="icon-btn" id="open-day" aria-label="Show my day"><svg aria-hidden="true" class="icon"><use href="#icon-calendar"/></svg></button><a class="app-brand" href="./" aria-label="Back to experience study">harness</a><button class="icon-btn" id="open-topics" aria-label="Open topics and routines"><svg aria-hidden="true" class="icon"><use href="#icon-topics"/></svg></button></header>
+        <header class="app-header"><button class="icon-btn" id="study-menu" aria-label="Open topics sidebar" hidden><svg aria-hidden="true" class="icon"><use href="#icon-menu"/></svg></button><button class="icon-btn" id="open-day" aria-label="Show my day"><svg aria-hidden="true" class="icon"><use href="#icon-calendar"/></svg></button><a class="app-brand" href="./" aria-label="Back to experience study">harness</a><button class="icon-btn" id="open-topics" aria-label="Open topics and routines"><svg aria-hidden="true" class="icon"><use href="#icon-topics"/></svg></button></header>
         <div class="app-body" id="app-body"></div><div id="feed-announcement" class="feed-announcement" role="status" hidden></div>
+        <div class="topics-drawer" id="topics-drawer" hidden>
+          <button class="drawer-backdrop" data-close-drawer aria-label="Close topics sidebar"></button>
+          <section class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+            <header><h2 id="drawer-title">Your topics</h2><button class="icon-btn" id="close-drawer" data-close-drawer aria-label="Close topics sidebar"><svg class="icon" aria-hidden="true"><use href="#icon-back"/></svg></button></header>
+            <p>Kept together as we talk.</p>
+            <label class="sr-only" for="drawer-search">Search sidebar topics</label><input id="drawer-search" class="topic-search" placeholder="Find a person or topic…" autocomplete="off">
+            <div id="drawer-topics" class="drawer-topic-list"></div>
+            <button class="drawer-routines" data-drawer-routines>Standing instructions <svg class="icon" aria-hidden="true"><use href="#icon-routine"/></svg></button>
+          </section>
+        </div>
         <footer class="app-footer">
           <div id="voice-status" class="voice-status" role="status">Ready when you are</div>
           <div class="voice-controls"><button class="icon-btn" id="type-toggle" aria-label="Type instead"><svg aria-hidden="true" class="icon"><use href="#icon-keyboard"/></svg></button><button class="talk-button" id="talk-button"><svg aria-hidden="true" class="icon"><use href="#icon-mic"/></svg><span id="talk-label">Let’s talk</span></button><button class="icon-btn" id="audio-toggle" aria-label="Enable spoken replies" aria-pressed="false"><svg aria-hidden="true" class="icon"><use id="audio-icon" href="#icon-muted"/></svg></button></div>

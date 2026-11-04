@@ -16,11 +16,12 @@ let state, audio=false, speaking=false, listening=false, recognition=null, speec
 const params=new URLSearchParams(location.search);
 let mode=Object.hasOwn(modes,params.get('mode'))?params.get('mode'):'voice';
 let scenario=Object.hasOwn(scenarios,params.get('scenario'))?params.get('scenario'):'morning';
+let variant=Object.hasOwn(STUDIES,params.get('variant'))?params.get('variant'):'classic';
 if(params.get('app')==='1')document.body.classList.add('focus-mode');
 const screens=[];
 const icon=name=>`<svg class="icon" aria-hidden="true"><use href="#icon-${name}"/></svg>`;
 function reset(){
-  stopMedia(); closeScreens(); state={history:[],text:scenarios[scenario].start,context:scenarios[scenario].context,started:false,proposal:'ready',shortened:false,approval:false,draft:"Hi Leo, here’s the proposal I promised, based on the terms we discussed.",reminder:null,quietRule:false,artifact:null,lastAction:null};
+  closeTopicDrawer();stopMedia(); closeScreens(); state={history:[],text:scenarios[scenario].start,context:scenarios[scenario].context,started:false,proposal:'ready',shortened:false,approval:false,draft:"Hi Leo, here’s the proposal I promised, based on the terms we discussed.",reminder:null,quietRule:false,artifact:null,lastAction:null};
   initializeTopics();
   if(scenario==='continuity'){state.shortened=true;state.history.push({who:'user',text:'Make the proposal one page. A small pilot first.',topic:'leo',seeded:true},{who:'assistant',text:'One page, same proposed scope. Commercial terms are still open.',topic:'leo',seeded:true});}
   state.history.push({who:'assistant',text:state.text,topic:state.currentTopic,at:Date.now()});touchTopic(state.currentTopic);render();saveSession();
@@ -48,19 +49,21 @@ function renderControls(message){
   $('#audio-toggle').setAttribute('aria-pressed',String(audio));
   $('#audio-icon').setAttribute('href',audio?'#icon-volume':'#icon-muted');
   $('#audio-toggle').setAttribute('aria-label',audio?'Mute spoken replies':'Enable spoken replies');
+  renderStudyChrome();
   const presence=$('.presence');if(presence){presence.classList.toggle('speaking',speaking);presence.classList.toggle('listening',listening);}
 }
 function artifactLink(kind){return `<button class="${mode==='thread'?'thread-artifact':'inline-link'}" data-artifact="${kind}">${icon('file')}<span>${kind==='prep'?'Open call prep':'Open proposal'}</span>${icon('next')}</button>`;}
 function receipt(){return state.reminder?`<div class="receipt">${esc(state.reminder)}<br><button data-command="Cancel that reminder">Undo reminder</button> · <button id="advance-reminder">Jump to reminder</button></div>`:state.quietRule?'<div class="receipt">I’ll only surface Dana’s list if it’s late.<br><button data-command="Undo that preference">Undo preference</button></div>':'';}
 function render(){
+  ensureStudyState();
   $('#phone').dataset.mode=mode;
-  document.querySelectorAll('button[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));
+  document.querySelectorAll('button[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(variant==='classic'&&b.dataset.mode===mode)));
   document.querySelectorAll('[data-scenario]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.scenario===scenario)));
-  $('#preview-caption').textContent=modes[mode].caption;$('#observation').textContent=modes[mode].observation;
-  $('#focus-link').href=`?app=1&mode=${mode}&scenario=${scenario}`;
+  $('#preview-caption').textContent=isNewStudy()?STUDIES[variant].caption:modes[mode].caption;$('#observation').textContent=isNewStudy()?STUDIES[variant].observation:modes[mode].observation;
+  $('#focus-link').href=`?app=1&mode=${mode}&scenario=${scenario}&variant=${variant}`;
   $('#scenario-note').textContent=scenarios[scenario].note;
   const proposalMoment=['morning','continuity'].includes(scenario);
-  const prompts=state.approval?['Read it back','Make it warmer','Review before sending','Cancel that']:scenarios[scenario].prompts;
+  const prompts=state.approval?['Read it back','Make it warmer','Review before sending','Cancel that']:isNewStudy()?STUDIES[variant].prompts:scenarios[scenario].prompts;
   $('#prompts').innerHTML=prompts.map(p=>`<button class="prompt" data-command="${esc(p)}">${esc(p)}</button>`).join('');
   const body=$('#app-body');
   if(mode==='thread'){
@@ -68,6 +71,8 @@ function render(){
     const history=state.history.filter(m=>m.topic===activeTopic);
     body.innerHTML=topicHeader(true)+'<div class="conversation-log">'+(history.length?history:[latestTopicMessage(state.currentTopic)]).map(m=>`<div class="thread-msg ${m.who}">${m.who==='assistant'?'<span class="thread-who">Harness</span>':''}${esc(m.text)}${m.originalText?`<details class="original-utterance"><summary>From a longer message</summary><p>${esc(m.originalText)}</p></details>`:''}${m.artifact?artifactLink(m.artifact):''}${m.action==='review'&&state.approval?'<button class="approval-inline" data-open="approval">Review draft ↗</button>':''}</div>`).join('')+'</div>';
     const log=$('.conversation-log');log.scrollTop=log.scrollHeight;
+  }else if(isNewStudy()){
+    body.innerHTML=studyVoiceHTML();
   }else if(mode==='brief'&&!state.started){
     const s=scenarios[scenario];
     body.innerHTML=`<div class="brief-view"><p class="brief-date">Wednesday, November 4</p><h2>${s.title}</h2><p>${s.brief}</p><div class="brief-focus"><span class="eyebrow">${proposalMoment?'MY SUGGESTION':scenario==='change'?'WHAT CHANGED':'IN THE BACKGROUND'}</span><p>${proposalMoment?'Let’s get Leo’s proposal off your mind.':scenario==='change'?'Take the time back. I’ll get you ready before the call.':'Dana’s list is on my radar. It can wait until tomorrow.'}</p>${proposalMoment?artifactLink('proposal'):scenario==='change'?artifactLink('prep'):''}</div><div class="brief-bottom">${s.bottom.split('\n').map(esc).join('<br>')}</div></div>`;
@@ -87,7 +92,7 @@ function submit(raw,{originalText=null}={}){
   const t=text.toLowerCase().replace(/[’]/g,"'");
   const topic=inferTopic(t);if(topic){useTopic(topic);state.context=`${state.topics[topic].company} · ${state.topics[topic].title}`;}
   state.history.push({who:'user',text,topic:/routine|standing instruction|show.*topics|whenever|anytime|every time/.test(t)?null:state.currentTopic,at:Date.now(),...(originalText?{originalText}: {})});
-  if(handleOrganization(t,text))return;
+  if(handleStudyIntent(t,text)||handleOrganization(t,text))return;
   if(/cancel.*remind|undo.*remind/.test(t)){state.reminder=null;return response('Canceled. I won’t remind you about that.');}
   if(/undo.*preference/.test(t)){state.quietRule=false;return response('Undone. I’ll use the previous reminder preference.');}
   if(/cancel|never mind|nevermind/.test(t)){state.approval=false;return response('Left as a draft. Nothing sent.');}
@@ -180,7 +185,7 @@ function startMic(){
 function openNotes(){openScreen('DESIGN NOTES','The assistant carries the structure.',`<p>These studies explore how much the owner needs to see while talking with an assistant. Conversation carries the interaction; visual work appears when useful.</p><h3>01 / Just talk · recommended starting point</h3><p>One relevant thought, one question, with a persistent caption. Best for being on the move. Test whether people still feel oriented when the backlog is hidden.</p><h3>02 / A conversation</h3><p>Same assistant, with a visible transcript. Best for resuming a discussion and switching between speaking and typing. Risk: a long feed can bring back the reading burden.</p><h3>03 / The quiet brief</h3><p>A few lines orient you before the first spoken turn. Best for checking in silently. Once you reply, it becomes a voice session. Risk: extra information can become a second task list.</p><h3>What the assistant remembers</h3><p>What has been discussed in this session, whether you’ve recorded a send, what is waiting on someone else, and corrections to the plan. “What changed?” gives only the difference. “Why?” reveals context. No inference about your mental state is claimed.</p><h3>Keep the useful visuals</h3><p>Documents, call prep, sources and a day view open on request. They support the conversation. Draft review preserves an explicit exact-action gate.</p><h3>Useful next test</h3><p>Try each direction with the same scenario, without looking at the screen. Can you say what matters, explain why, correct a mistake and postpone something? Then ask to see a document. Compare confidence, effort and missed context.</p><p class="notice">Scripted interaction study. No AI model, accounts, background monitoring, actual reminders or real sending. Each reviewer’s demo state stays in their own browser. Resetting a moment clears it. Browser dictation is optional and may use a browser speech service.</p>`);}
 document.addEventListener('click',e=>{
   const command=e.target.closest('[data-command]');if(command){if(screens.at(-1)?.topic)useTopic(screens.at(-1).topic);if(screens.length)closeScreens();submit(command.dataset.command);return;}
-  const m=e.target.closest('button[data-mode]');if(m){stopMedia();closeScreens();mode=m.dataset.mode;render();saveSession();return;}
+  const m=e.target.closest('button[data-mode]');if(m){stopMedia();closeTopicDrawer();closeScreens();variant='classic';mode=m.dataset.mode;render();saveSession();return;}
   const s=e.target.closest('[data-scenario]');if(s){scenario=s.dataset.scenario;reset();return;}
   const artifact=e.target.closest('[data-artifact]');if(artifact){artifact.dataset.artifact==='prep'?openPrep():openProposal();return;}
   if(e.target.closest('[data-open="approval"]'))return openApproval();
@@ -211,8 +216,8 @@ $('#return-to-chat').addEventListener('click',()=>{closeScreens();$('#talk-butto
 $('#screen-talk').addEventListener('click',()=>{if(screens.at(-1)?.topic)useTopic(screens.at(-1).topic);openMic();});
 $('#screen-type').addEventListener('click',()=>{if(screens.at(-1)?.topic)useTopic(screens.at(-1).topic);closeScreens();$('#composer').hidden=false;$('#message').focus();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&screens.length){e.preventDefault();goBack();}});
-$('#open-day').addEventListener('click',openDay);
-$('#open-topics').addEventListener('click',()=>openTopics());
+$('#open-day').addEventListener('click',()=>isNewStudy()?openStudyOverview():openDay());
+$('#open-topics').addEventListener('click',()=>isNewStudy()?(variant==='drawer'?openTopicDrawer():openStudyOverview('topics')):openTopics());
 $('#open-notes').addEventListener('click',openNotes);$('#reset').addEventListener('click',reset);
 document.addEventListener('visibilitychange',()=>{if(document.hidden){stopMedia();renderControls();}});
 window.addEventListener('pagehide',stopMedia);

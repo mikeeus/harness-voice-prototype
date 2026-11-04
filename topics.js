@@ -10,13 +10,13 @@ function initializeTopics(){
   state.routines=[];state.routineRuns=[];state.pendingRoutine=null;state.undoRoutine=null;
 }
 function saveSession(){
-  try{localStorage.setItem(SESSION_KEY,JSON.stringify({version:3,scenario,mode,state}));}catch{/* The demo remains usable with browser storage disabled. */}
+  try{localStorage.setItem(SESSION_KEY,JSON.stringify({version:3,scenario,mode,variant,state}));}catch{/* The demo remains usable with browser storage disabled. */}
 }
 function startSession(){
   let saved;try{saved=JSON.parse(localStorage.getItem(SESSION_KEY));}catch{}
   reset();
   if(saved?.version===3&&saved.state?.topics?.leo&&Array.isArray(saved.state.history)&&Array.isArray(saved.state.routines)&&Object.hasOwn(scenarios,saved.scenario)&&!params.has('scenario')){
-    state=saved.state;scenario=saved.scenario;if(!params.has('mode')&&Object.hasOwn(modes,saved.mode))mode=saved.mode;
+    state=saved.state;scenario=saved.scenario;if(!params.has('variant')&&!params.has('mode')&&Object.hasOwn(STUDIES,saved.variant))variant=saved.variant;if(!params.has('mode')&&Object.hasOwn(modes,saved.mode))mode=saved.mode;
     render();
   }
   saveSession();
@@ -40,6 +40,7 @@ function useTopic(id){
   if(state.topics[id])state.currentTopic=id;
 }
 function topicSummary(id){
+  if(id==='funds')return 'Sam needs your decision on server funds by 5. The amount still needs confirming.';
   if(id==='leo')return ['sent','done'].includes(state.proposal)?'The proposal is sent. Leo has the next step.':state.reminder?'Draft ready. Set aside until after your call.':state.shortened?'One-page draft ready. Sending still needs your approval.':'Draft ready. Pilot scope still needs agreement.';
   if(id==='call')return 'Prep ready. The pilot scope is the decision to make.';
   if(id==='data')return 'Waiting on Dana’s list, due Thursday. No chase needed today.';
@@ -80,26 +81,28 @@ function resumeTopic(id){
   touchTopic(id);render();saveSession();say(latest.text);
 }
 
-function routineSentence(r){return `${r.source==='Telegram'?'Direct mentions in selected Telegram chats':'Emails in the selected inbox'}${r.person==='Leo'?' from Leo':''} → ${r.action==='draft'?'prepare a reply':'flag for review'}. ${r.notify==='urgent'?'Only interrupt if urgent.':'Bring each match to me.'}`;}
+function routineSentence(r){if(r.source==='Calendar')return `Bring my prep ${r.minutes||10} minutes before a calendar call.`;return `${r.source==='Telegram'?'Direct mentions in selected Telegram chats':'Emails in the selected inbox'}${r.person==='Leo'?' from Leo':''} → ${r.action==='draft'?'prepare a reply':'flag for review'}. ${r.notify==='urgent'?'Only interrupt if urgent.':'Bring each match to me.'}`;}
 function beginRoutine(existing=null){
   state.pendingRoutine=existing?{...existing}:{id:`routine-${Date.now()}`,title:'Replies to direct mentions',source:'Telegram',person:'Anyone',action:'draft',notify:'urgent',enabled:true};
   openRoutineReview();
 }
 function openRoutineReview(replace=false){
+  if(isNewStudy())return openPendingRoutineAudit(replace);
   const r=state.pendingRoutine;if(!r)return;
   if(replace&&screens.at(-1)?.key==='routine-review')screens.pop();
-  openScreen('ROUTINE · REVIEW','Here’s what I’ll do.',()=>`<p class="routine-sentence">${esc(routineSentence(r))}</p><form id="routine-form" class="routine-form"><label>When<select aria-label="When" name="source"><option value="Telegram" ${r.source==='Telegram'?'selected':''}>I’m mentioned in Telegram</option><option value="Email" ${r.source==='Email'?'selected':''}>A new email arrives</option></select></label><label>From<select aria-label="From" name="person"><option ${r.person==='Anyone'?'selected':''}>Anyone</option><option ${r.person==='Leo'?'selected':''}>Leo</option></select></label><label>Prepare<select aria-label="Prepare" name="action"><option value="draft" ${r.action==='draft'?'selected':''}>A draft reply</option><option value="flag" ${r.action==='flag'?'selected':''}>An item for review</option></select></label><label>Bring it to me<select aria-label="Bring it to me" name="notify"><option value="urgent" ${r.notify==='urgent'?'selected':''}>Only if urgent</option><option value="every" ${r.notify==='every'?'selected':''}>For every match</option></select></label><p class="screen-disclaimer">Only selected sources. Replies stay drafts until you approve the exact send.</p><button class="primary" type="submit">Save routine</button><button class="text-link routine-cancel" type="button" data-cancel-routine>Leave it for now</button></form>`,{key:'routine-review'});
+  openScreen('ROUTINE · REVIEW','Here’s what I’ll do.',()=>`<p class="routine-sentence">${esc(routineSentence(r))}</p><form id="routine-form" class="routine-form"><label>When<select aria-label="When" name="source"><option value="Telegram" ${r.source==='Telegram'?'selected':''}>I’m mentioned in Telegram</option><option value="Email" ${r.source==='Email'?'selected':''}>A new email arrives</option>${r.source==='Calendar'?'<option value="Calendar" selected>A calendar call is coming up</option>':''}</select></label><label>From<select aria-label="From" name="person"><option ${r.person==='Anyone'?'selected':''}>Anyone</option><option ${r.person==='Leo'?'selected':''}>Leo</option></select></label><label>Prepare<select aria-label="Prepare" name="action"><option value="draft" ${r.action==='draft'?'selected':''}>A draft reply</option><option value="flag" ${r.action==='flag'?'selected':''}>An item for review</option>${r.action==='prep'?'<option value="prep" selected>Call prep</option>':''}</select></label><label>Bring it to me<select aria-label="Bring it to me" name="notify"><option value="urgent" ${r.notify==='urgent'?'selected':''}>Only if urgent</option><option value="every" ${r.notify==='every'?'selected':''}>For every match</option>${r.notify==='before-call'?'<option value="before-call" selected>Before the call</option>':''}</select></label><p class="screen-disclaimer">Only selected sources. Replies stay drafts until you approve the exact send.</p><button class="primary" type="submit">Save routine</button><button class="text-link routine-cancel" type="button" data-cancel-routine>Leave it for now</button></form>`,{key:'routine-review'});
 }
 function saveRoutine(form){
   const data=new FormData(form),r={...state.pendingRoutine};
   for(const key of ['source','person','action','notify'])r[key]=data.get(key);
-  r.title=r.source==='Telegram'?'Replies to direct mentions':'Email replies';
+  r.title=r.source==='Calendar'?'Before my calls':r.source==='Telegram'?'Replies to direct mentions':'Email replies';
   const index=state.routines.findIndex(x=>x.id===r.id);
   state.undoRoutine={id:r.id,previous:index<0?null:{...state.routines[index]}};
   if(index<0)state.routines.push(r);else state.routines[index]=r;
   state.pendingRoutine=null;closeScreens();response(r.enabled?'Saved. I’ll prepare the work and keep replies as drafts. You can change or pause this whenever you want.':'Saved. This routine stays paused. Resume it whenever you’re ready.',{context:'Your routines'});openRoutine(r.id);saveSession();
 }
 function openRoutine(id,replace=false){
+  if(isNewStudy())return openRoutineAudit(id,replace);
   const r=state.routines.find(x=>x.id===id);if(!r)return;
   if(replace&&screens.at(-1)?.key==='routine')screens.pop();
   openScreen('ROUTINE',r.title,()=>`<span class="status-tag ${r.enabled?'':'paused'}">${r.enabled?'Active':'Paused'}</span><p class="routine-sentence">${esc(routineSentence(r))}</p><div class="routine-fact"><span>Sources</span><strong>${esc(r.source==='Telegram'?'Selected Telegram chats':'Selected email inbox')}</strong></div><div class="routine-fact"><span>Who</span><strong>${esc(r.person)}</strong></div><div class="routine-fact"><span>Delivery</span><strong>Drafts only · approval before sending</strong></div><div class="routine-actions"><button data-toggle-routine="${esc(id)}">${r.enabled?'Pause routine':'Resume routine'}</button><button data-edit-routine="${esc(id)}">Edit instruction</button></div><button class="primary" data-test-routine="${esc(id)}">Try with a sample message</button>${state.undoRoutine?.id===id?`<button class="text-link routine-cancel" data-undo-routine="${esc(id)}">Undo last change</button>`:''}<p class="screen-disclaimer">A local prototype instruction. No real messages are being monitored.</p>`,{key:'routine',routine:id});
@@ -109,6 +112,7 @@ function toggleRoutine(id){
   state.undoRoutine={id,previous:{...r}};r.enabled=!r.enabled;saveSession();openRoutine(id,true);
 }
 function testRoutine(id){
+  if(state.routines.find(r=>r.id===id)?.source==='Calendar')return testStudyCalendar(id);
   const r=state.routines.find(x=>x.id===id);if(!r)return;
   const drafted=r.enabled&&r.action==='draft';
   state.routineRuns.push({id,at:Date.now(),outcome:!r.enabled?'paused':drafted?'draft':'flag'});saveSession();
@@ -219,10 +223,10 @@ function latestTopicMessage(id){
     who:'assistant',topic:id,text:topicSummary(id),artifact:id==='leo'?'proposal':id==='call'?'prep':null,seeded:true
   };
 }
-function canUseFeed(){return !screens.length&&(mode==='voice'||mode==='brief'&&state.started);}
+function canUseFeed(){return !drawerOpen&&variant!=='asked'&&!screens.length&&(mode==='voice'||mode==='brief'&&state.started);}
 function browseTopic(direction){
   if(!canUseFeed())return false;
-  const topics=orderedTopics(),index=/^Your (?:routines|topics)/.test(state.context)?(direction>0?-1:topics.length):topics.findIndex(t=>t.id===state.currentTopic),topic=topics[index+direction];
+  const topics=feedTopics(),index=/^Your (?:routines|topics)/.test(state.context)?(direction>0?-1:topics.length):topics.findIndex(t=>t.id===state.currentTopic),topic=topics[index+direction];
   if(!topic)return false;
   stopMedia();useTopic(topic.id);state.started=true;
   const latest=latestTopicMessage(topic.id);
@@ -262,6 +266,7 @@ document.addEventListener('pointerdown',e=>{
 document.addEventListener('pointerup',e=>{
   const start=feedPointer;feedPointer=null;if(!start||start.id!==e.pointerId||!canBrowseFrom(e.target))return;
   const dy=e.clientY-start.y,dx=e.clientX-start.x;
+  if(variant==='across')return;
   if(Math.abs(dy)>55&&Math.abs(dy)>Math.abs(dx)*1.4)browseTopic(dy<0?1:-1);
 });
 document.addEventListener('pointercancel',()=>{feedPointer=null;});
@@ -271,7 +276,7 @@ document.addEventListener('wheel',e=>{
   if(browseTopic(e.deltaY>0?1:-1)){lastWheel=Date.now();e.preventDefault();}
 },{passive:false});
 document.addEventListener('keydown',e=>{
-  if(!['ArrowUp','ArrowDown'].includes(e.key)||!canUseFeed()||e.target.closest('input,textarea,select'))return;
+  if(variant==='across'||!['ArrowUp','ArrowDown'].includes(e.key)||!canUseFeed()||e.target.closest('input,textarea,select'))return;
   if(!document.body.classList.contains('focus-mode')&&!e.target.closest('#phone'))return;
   if(browseTopic(e.key==='ArrowDown'?1:-1))e.preventDefault();
 });

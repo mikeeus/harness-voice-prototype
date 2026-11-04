@@ -216,5 +216,85 @@
 .feed-announcement{position:absolute;top:110px;left:18px;right:18px;border:1px solid #e9dfed;border-radius:11px;background:#fcf9fe;box-shadow:0 5px 18px #705b7610;color:#897192;font-size:11px;line-height:1.6;text-align:center;padding:10px 12px;pointer-events:none;z-index:2}
 .focus-mode .feed-announcement{top:65px}
 .topic-pager .browse-all-topics{width:auto;display:flex;gap:8px;font-size:11px;padding:0 12px}
+
+/* Call explorations are opt-in; the original three directions keep their UI. */
+.originals-label,.exploration-label{font-size:9px;letter-spacing:1.5px;font-weight:600;color:#9c8aa4;margin-top:25px}
+.originals-label+.concepts,.explorations{margin-top:9px}
+.explorations button{padding-top:12px;padding-bottom:12px}
+.explorations button[aria-pressed=true]{background:#eee8ef;border-color:#e4dbe6}
+.explorations button[aria-pressed=true] .mode-arrow{opacity:1}
+.personal-greeting{font-size:18px;line-height:1.5;letter-spacing:-.3px;color:#9d89a6;margin:4px 0 16px;font-weight:300;flex-shrink:0}
+.phone:not([data-variant=classic]) .app-body.is-feed{position:relative;padding-top:10px}
+.phone:not([data-variant=classic]) .voice-controls{justify-content:center;gap:29px}
+.phone:not([data-variant=classic]) .talk-button{flex:none;width:62px;height:62px;min-height:62px;padding:0;border-radius:50%}
+.phone:not([data-variant=classic]) .talk-button .icon{width:24px;height:24px;stroke-width:1.55}
+.phone:not([data-variant=classic]) #talk-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.phone:not([data-variant=classic]) .voice-controls>.icon-btn{width:42px;height:44px;border-color:transparent;background:none}
+.phone:not([data-variant=classic]) .voice-status{font-size:9px;color:#aa98b1;min-height:23px}
+.phone:not([data-variant=classic]) .latest-message .spoken-text{font-size:25px;line-height:1.45}
+.phone:not([data-variant=classic]) .latest-label{font-size:8px;color:#b3a0bb}
+.phone:not([data-variant=classic]) .screen-footer{justify-content:center;gap:26px}
+.phone:not([data-variant=classic]) .screen-talk{flex:none;width:50px;height:50px;min-height:50px;border-radius:50%;padding:0;background:var(--plum);color:white}
+.phone:not([data-variant=classic]) .screen-talk span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.phone[data-variant=asked] .app-header{justify-content:center}
+.phone[data-variant=dots] .app-body.is-feed{padding-left:49px;padding-right:22px}
+.left-topic-dots{position:absolute;left:0;top:50%;transform:translateY(-50%);max-height:62%;overflow-y:auto;scrollbar-width:none;display:flex;flex-direction:column;align-items:center;width:43px;padding:1px 0}
+.left-topic-dots button{width:42px;height:44px;min-height:44px;flex-shrink:0;display:grid;place-items:center;padding:0;border-radius:0}
+.left-topic-dots button>span{width:5px;height:5px;border-radius:5px;background:#d5c9da;transition:height .18s,background .18s}
+.left-topic-dots button[aria-current=true]>span{height:18px;background:#887092}
+.left-topic-dots button:hover>span{background:#a890b3}
+.left-topic-dots button:focus-visible{outline-offset:-4px;border-radius:8px}
+.phone[data-variant=across] .app-body.is-feed,.phone[data-variant=drawer] .app-body.is-feed{touch-action:none}
+.phone[data-variant=across] .app-body.feed-scrolls,.phone[data-variant=drawer] .app-body.feed-scrolls{touch-action:pan-y}
+.across-navigation{padding-top:10px;flex-shrink:0}
+.across-navigation nav{display:flex;align-items:center;justify-content:space-between}
+.across-navigation nav>button{display:grid;place-items:center;width:44px;height:44px;min-height:44px;color:#a58cae}
+.across-navigation nav>button .icon{width:17px;height:17px}
+.across-navigation nav>button:disabled{opacity:.25}
+.across-navigation nav>span{display:flex;align-items:center;gap:0}
+.across-navigation nav>span button{display:grid;place-items:center;width:34px;height:44px;min-height:44px;padding:0}
+.across-navigation i{display:block;width:5px;height:5px;background:#dfd3e4;border-radius:5px}
+.across-navigation [aria-current=true] i{width:17px;background:#a18aa7}
+.across-navigation>p{text-align:center;font-size:9px;color:#ac97b6;margin:0 0 13px}
+.work-actions{display:flex;justify-content:center;gap:22px;border-top:1px solid #f0eaf3;padding-top:5px}
+.work-actions button{font-size:11px;min-height:40px;color:#9d84a9}
+.work-actions button:hover{color:#705b76}
+.work-undo{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:0 9px;font-size:9px;color:#a18aa7;line-height:1.6;padding-top:7px;flex-shrink:0}
+.work-undo button{font-size:10px;color:#80678c;min-height:33px;padding:0 3px;text-decoration:underline;text-underline-offset:3px}
+.topics-drawer{position:absolute;inset:47px 0 15px;z-index:8;overflow:hidden;touch-action:none}
+.focus-mode .topics-drawer{inset:0}
+.drawer-backdrop{position:absolute;inset:0;background:#30203822;width:100%;height:100%;border:0;border-radius:0}
+.drawer-panel{position:absolute;left:0;top:0;bottom:0;display:flex;flex-direction:column;background:#fdfbfe;width:86%;max-width:340px;padding:20px 20px 16px;box-shadow:9px 0 36px #3c284918;animation:drawer-arrive .18s ease-out;touch-action:pan-y}
+.drawer-panel>header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.drawer-panel h2{font-size:23px;font-weight:500;letter-spacing:-.5px}
+.drawer-panel header .icon-btn{color:#a58caf}
+.drawer-panel>p{font-size:12px;color:#a18ba9;margin:0 0 18px}
+.drawer-panel .topic-search{margin-bottom:13px;font-size:16px;flex-shrink:0}
+.drawer-topic-list{min-height:0;flex:1;overflow:auto;scrollbar-width:thin}
+.drawer-topic-list>button{display:flex;flex-direction:column;align-items:flex-start;gap:5px;width:100%;text-align:left;padding:15px 11px;border-radius:10px;margin:4px 0}
+.drawer-topic-list>button[aria-current=true]{background:#f0e8f4}
+.drawer-topic-list small{font-size:9px;letter-spacing:.4px;color:#ae95b9}
+.drawer-topic-list strong{font-weight:500;font-size:16px;line-height:1.4;color:#67506f}
+.drawer-topic-list span{font-size:11px;line-height:1.6;color:#9a86a4}
+.drawer-routines{display:flex;align-items:center;justify-content:space-between;border-top:1px solid #eee7f2;margin-top:15px;padding:13px 0 0;min-height:50px;color:#9c83a7;font-size:12px}
+.drawer-routines .icon{width:17px;height:17px}
+.overview-group{margin-top:24px}
+#screen-content .overview-group>h3{font-size:10px;font-weight:500;letter-spacing:1px;color:#a18aa7;text-transform:uppercase;margin:0 0 6px}
+.overview-item{border-bottom:1px solid #eee8f2;padding:2px 0}
+.overview-item>button:first-child{display:flex;position:relative;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;width:100%;padding:15px 20px 15px 0}
+.overview-item small{font-size:9px;color:#ad96b8}
+.overview-item strong{font-weight:500;font-size:17px;line-height:1.4;letter-spacing:-.2px}
+.overview-item span{font-size:12px;line-height:1.7;color:#9a879f}
+.overview-item .icon{position:absolute;right:0;top:45%;width:13px;height:13px;color:#b8a1c2}
+.overview-item .restore-work{font-size:11px;min-height:35px;color:#80618d;padding:0;margin-bottom:6px}
+.audit-instruction{margin:13px 0 23px;padding:4px 0 4px 15px;border-left:2px solid #d0bdd8;font-size:15px;line-height:1.7;color:#8f739b}
+.audit-steps{padding-left:17px;margin:13px 0 23px;color:#96869e;font-size:13px;line-height:1.8}
+.audit-steps li{padding-left:5px;margin:8px 0}
+#screen-content .audit-activity{font-size:10px;line-height:1.8;color:#b19cba}
+@keyframes drawer-arrive{from{transform:translateX(-24px)}to{transform:translateX(0)}}
+@media(min-width:1051px){.preview{align-self:start;position:sticky;top:24px}.direction-footer{margin-top:26px}}
+@media(max-width:720px){.originals-label,.exploration-label{margin-top:7px;font-size:8px}.originals-label+.concepts{margin-top:7px}.exploration-label{margin-top:17px}.explorations{display:grid;grid-template-columns:1fr 1fr;margin-top:7px;gap:5px}.explorations button{justify-content:flex-start;min-height:43px;padding:10px 12px;gap:9px}.explorations strong{font-size:11px}.direction>.eyebrow{display:none}.phone[data-variant=dots] .topic-title{font-size:19px}.phone[data-variant=dots] .history-button{font-size:10px;gap:4px}}
+@media(max-width:360px){.phone:not([data-variant=classic]) .latest-message .spoken-text{font-size:22px}.phone[data-variant=dots] .app-body.is-feed{padding-left:43px;padding-right:17px}.left-topic-dots{width:38px}.left-topic-dots button{width:38px}.phone[data-variant=dots] .topic-title{font-size:17px}.personal-greeting{font-size:17px;margin-bottom:12px}.drawer-panel{padding-left:16px;padding-right:16px}.explorations button{padding:10px 8px;gap:6px}}
+@media(prefers-reduced-motion:reduce){.drawer-panel,.left-topic-dots button>span{animation:none;transition:none}}
 @media(max-width:360px){.topic-title{font-size:18px}.history-button{font-size:10px;gap:4px}.latest-message .spoken-text{font-size:23px}.latest-message .spoken-text.long{font-size:20px}.topic-pager{gap:12px}.voice-topic-header{gap:8px}}
 @media(max-height:760px) and (min-width:721px){.latest-message{padding:16px 0}.latest-message .spoken-text{font-size:22px}.latest-message .spoken-text.long{font-size:20px}.voice-topic-header{padding-bottom:10px}.topic-title{font-size:18px}}
