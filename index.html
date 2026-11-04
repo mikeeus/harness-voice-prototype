@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow"><meta name="theme-color" content="#f7f5f2">
+  <title>Harness — a little less to think about</title>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="topics.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+    <symbol id="icon-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M7.5 3v4m9-4v4M3.5 10h17M8 14h2m4 0h2m-8 3.5h2"/></symbol>
+    <symbol id="icon-topics" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><path d="M14 15h7m-7 5h5"/></symbol>
+    <symbol id="icon-routine" viewBox="0 0 24 24"><path d="M20 7a8 8 0 0 0-14-2L3 8m0-5v5h5m-4 9a8 8 0 0 0 14 2l3-3m0 5v-5h-5"/></symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="icon-library" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="17" rx="2.5"/><path d="M8.5 7h7m-7 4h7m-7 4h4M2 7v12a4 4 0 0 0 4 4"/></symbol>
+    <symbol id="icon-mic" viewBox="0 0 24 24"><rect x="8.5" y="2.5" width="7" height="12" rx="3.5"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v3.5m-3 0h6"/></symbol>
+    <symbol id="icon-keyboard" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M6.5 9h.1m3.5 0h.1m3.5 0h.1m3.5 0h.1m-10.9 3.5h.1m3.5 0h.1m3.5 0h.1m3.5 0h.1M8 16h8"/></symbol>
+    <symbol id="icon-volume" viewBox="0 0 24 24"><path d="m11 4-6 5H2.5v6H5l6 5V4Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></symbol>
+    <symbol id="icon-muted" viewBox="0 0 24 24"><path d="m11 4-6 5H2.5v6H5l6 5V4Zm5 5 5 6m0-6-5 6"/></symbol>
+    <symbol id="icon-back" viewBox="0 0 24 24"><path d="m14.5 5-7 7 7 7"/></symbol>
+    <symbol id="icon-next" viewBox="0 0 24 24"><path d="m9.5 5 7 7-7 7"/></symbol>
+    <symbol id="icon-up" viewBox="0 0 24 24"><path d="M12 19V5m-6 6 6-6 6 6"/></symbol>
+    <symbol id="icon-message" viewBox="0 0 24 24"><path d="M20.5 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2v-10a9 9 0 0 1 18.5-.5Z"/><path d="M7 10h9m-9 4h6"/></symbol>
+    <symbol id="icon-file" viewBox="0 0 24 24"><path d="M14 2.5H6a2 2 0 0 0-2 2v15a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8.5L14 2.5Zm0 0v6h6M8 13h8m-8 4h5"/></symbol>
+    <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M6 18 18 6M6 6h12v12"/></symbol>
+    <symbol id="icon-signal" viewBox="0 0 20 16"><path d="M2 13v1m5-5v5m5-9v9m5-13v13"/></symbol>
+    <symbol id="icon-wifi" viewBox="0 0 20 16"><path d="M2 5a12 12 0 0 1 16 0M5 8a7.5 7.5 0 0 1 10 0m-7 3a3 3 0 0 1 4 0m-2 3h.01"/></symbol>
+    <symbol id="icon-battery" viewBox="0 0 27 16"><rect x="1" y="3" width="21" height="11" rx="3"/><path d="M25 7v3"/><rect class="battery-fill" x="4" y="6" width="15" height="5" rx="1"/></symbol>
+  </defs></svg>
+  <header class="studio-header"><a class="brand" href="./"><img src="assets/symbol-ink.svg" alt="">harness<span>experience studies</span></a><div class="header-right"><span class="private-dot"></span> Interactive prototype </div></header>
+  <main class="studio">
+    <aside class="direction">
+      <p class="eyebrow">VOICE FIRST / 01—03</p>
+      <h1>A little less<br>to think about.</h1>
+      <p class="intro">An assistant that knows what matters.<br>Says just enough. And lets you get on<br class="desktop-break"> with your day.</p>
+      <nav class="concepts" aria-label="Experience direction">
+        <button data-mode="voice" aria-pressed="true"><span class="number">01</span><span><strong>Just talk</strong><small>One thought at a time</small></span><span class="mode-arrow">↗</span></button>
+        <button data-mode="thread" aria-pressed="false"><span class="number">02</span><span><strong>A conversation</strong><small>Your place to come back to</small></span><span class="mode-arrow">↗</span></button>
+        <button data-mode="brief" aria-pressed="false"><span class="number">03</span><span><strong>The quiet brief</strong><small>A glance, then a conversation</small></span><span class="mode-arrow">↗</span></button>
+      </nav>
+      <div class="direction-footer"><span>THE EXPLORATION</span><p>What if the home screen was a relationship, rather than a list?</p><button class="text-link" id="open-notes">Read the design rationale ↗</button></div>
+    </aside>
+
+    <section class="preview" aria-label="Interactive mobile prototype">
+      <div class="phone" id="phone">
+        <div class="device-status" aria-hidden="true"><span>9:41</span><span class="island"></span><span class="status-icons"><svg aria-hidden="true" class="icon"><use href="#icon-signal"/></svg><svg aria-hidden="true" class="icon"><use href="#icon-wifi"/></svg><svg class="icon battery"><use href="#icon-battery"/></svg></span></div>
+        <header class="app-header"><button class="icon-btn" id="open-day" aria-label="Show my day"><svg aria-hidden="true" class="icon"><use href="#icon-calendar"/></svg></button><a class="app-brand" href="./" aria-label="Back to experience study">harness</a><button class="icon-btn" id="open-topics" aria-label="Open topics and routines"><svg aria-hidden="true" class="icon"><use href="#icon-topics"/></svg></button></header>
+        <div class="app-body" id="app-body"></div>
+        <footer class="app-footer">
+          <div id="voice-status" class="voice-status" role="status">Ready when you are</div>
+          <div class="voice-controls"><button class="icon-btn" id="type-toggle" aria-label="Type instead"><svg aria-hidden="true" class="icon"><use href="#icon-keyboard"/></svg></button><button class="talk-button" id="talk-button"><svg aria-hidden="true" class="icon"><use href="#icon-mic"/></svg><span id="talk-label">Let’s talk</span></button><button class="icon-btn" id="audio-toggle" aria-label="Enable spoken replies" aria-pressed="false"><svg aria-hidden="true" class="icon"><use id="audio-icon" href="#icon-muted"/></svg></button></div>
+          <form class="composer" id="composer" hidden><label class="sr-only" for="message">Tell or ask Harness</label><input id="message" placeholder="Tell or ask anything…" autocomplete="off"><button type="submit" aria-label="Send message"><svg aria-hidden="true" class="icon"><use href="#icon-up"/></svg></button></form>
+          <p class="prototype-label">Scripted demo · no connected accounts</p>
+        </footer>
+        <section class="detail-screen" id="detail-screen" aria-labelledby="screen-title" hidden>
+          <header class="screen-header"><button id="screen-back" class="back-button" aria-label="Go back"><svg aria-hidden="true" class="icon"><use href="#icon-back"/></svg><span>Back</span></button><span id="screen-section">Saved work</span><button class="icon-btn" id="return-to-chat" aria-label="Return to conversation"><svg aria-hidden="true" class="icon"><use href="#icon-message"/></svg></button></header>
+          <div class="screen-scroll" id="screen-scroll"><p id="screen-kicker" class="eyebrow"></p><div id="screen-content"></div></div>
+          <footer class="screen-footer"><button id="screen-talk" class="screen-talk"><svg aria-hidden="true" class="icon"><use href="#icon-mic"/></svg><span>Talk about this</span></button><button id="screen-type" class="icon-btn" aria-label="Type about this"><svg aria-hidden="true" class="icon"><use href="#icon-keyboard"/></svg></button></footer>
+        </section>
+        <div class="home-indicator" aria-hidden="true"></div>
+      </div>
+      <p class="preview-caption" id="preview-caption">01 / Just talk — the screen can stay in your pocket.</p>
+      <a class="focus-link" id="focus-link" href="?app=1">Use full screen ↗</a>
+    </section>
+
+    <aside class="test-panel">
+      <p class="eyebrow">TRY A MOMENT</p>
+      <div class="scenarios" aria-label="Demo scenario"><button data-scenario="morning" aria-pressed="true"><span>01</span> Starting the day <span>↗</span></button><button data-scenario="change" aria-pressed="false"><span>02</span> A change of plan <span>↗</span></button><button data-scenario="quiet" aria-pressed="false"><span>03</span> Nothing needs you <span>↗</span></button><button data-scenario="continuity" aria-pressed="false"><span>04</span> Pick it back up <span>↗</span></button></div>
+      <p class="scenario-note" id="scenario-note"></p>
+      <div class="try-saying"><p class="eyebrow">TRY SAYING…</p><div id="prompts"></div><small>Click a line to try it, or use the keyboard. Live microphone is optional.</small></div>
+      <div class="observation"><span class="tiny-cross">✳</span><p id="observation"></p></div>
+      <button class="text-link" id="reset">↺ Start this moment again</button>
+    </aside>
+  </main>
+  <footer class="studio-footer"><span>Fewer decisions about the interface. More room for your own thoughts.</span><span>Harness / November 2026</span></footer>
+</body>
+</html>
