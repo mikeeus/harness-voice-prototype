@@ -26,6 +26,9 @@ function inferTopic(text){
   if(/rachel|\btom\b|northwind|\bcall\b/.test(text))return 'call';
   if(/\bdana\b|data room/.test(text))return 'data';
   if(/hiring|product designer|full.time|contract role/.test(text))return 'hiring';
+  const words=text.toLowerCase().match(/[a-z]+/g)||[];
+  const matches=Object.values(state.topics||{}).filter(topic=>topic.keywords?.some(word=>words.includes(word)));
+  if(matches.length===1)return matches[0].id;
   return null;
 }
 function ensureTopic(id,title,company='Personal',kind='Exploring'){
@@ -47,8 +50,8 @@ function topicStatus(id){return id==='leo'?(['sent','done'].includes(state.propo
 function contextTabs(active){return `<div class="context-tabs" aria-label="Context views"><button data-context-tab="topics" aria-pressed="${active==='topics'}">Topics</button><button data-context-tab="routines" aria-pressed="${active==='routines'}">Routines</button><button data-context-tab="work" aria-pressed="${active==='work'}">Work</button></div>`;}
 function topicRows(query=''){
   const q=query.toLowerCase();
-  const topics=Object.values(state.topics).filter(t=>`${t.title} ${t.company} ${t.kind} ${topicSummary(t.id)}`.toLowerCase().includes(q));
-  return topics.length?topics.map(t=>`<button class="topic-row" data-topic="${esc(t.id)}"><span class="topic-overline">${esc(t.company)} <span>· ${esc(topicStatus(t.id))}</span></span><strong>${esc(t.title)}</strong><span class="topic-summary">${esc(topicSummary(t.id))}</span><span class="topic-row-foot">${state.history.filter(m=>m.topic===t.id).length} turns in this discussion ${icon('next')}</span></button>`).join(''):'<p class="empty-state">No matching topic. Try a person, company, or focus area.</p>';
+  const topics=orderedTopics().filter(t=>`${t.title} ${t.company} ${t.kind} ${topicSummary(t.id)}`.toLowerCase().includes(q));
+  return topics.length?topics.map(t=>`<button class="topic-row" data-topic="${esc(t.id)}"><span class="topic-overline">${esc(t.company)} <span>· ${esc(topicStatus(t.id))}</span></span><strong>${esc(t.title)}</strong><span class="topic-summary">${esc(topicSummary(t.id))}</span><span class="topic-row-foot">${state.history.filter(m=>m.topic===t.id).length} ${state.history.filter(m=>m.topic===t.id).length===1?'turn':'turns'} in this discussion ${icon('next')}</span></button>`).join(''):'<p class="empty-state">No matching topic. Try a person, company, or focus area.</p>';
 }
 function openTopics(tab='topics',replace=false){
   const render=()=>tab==='topics'?`${contextTabs(tab)}<p class="screen-intro">Everything we’ve been working through, kept together as we talk.</p><label class="sr-only" for="topic-search">Find topics</label><input class="topic-search" id="topic-search" placeholder="Person, company, or topic…" autocomplete="off"><div id="topic-results">${topicRows()}</div>`:tab==='routines'?`${contextTabs(tab)}<p class="screen-intro">How you’ve asked me to help, over time.</p>${state.routines.length?state.routines.map(r=>`<button class="routine-row" data-routine="${esc(r.id)}"><span class="routine-row-top">${icon('routine')}<span class="status-tag ${r.enabled?'':'paused'}">${r.enabled?'Active':'Paused'}</span></span><strong>${esc(r.title)}</strong><span>${esc(routineSentence(r))}</span>${icon('next')}</button>`).join(''):'<div class="routine-empty">'+icon('routine')+'<h3>Tell me once.<br>I’ll keep it in mind.</h3><p>Give me a standing instruction in your own words.</p></div>'}<button class="routine-example" data-command="Whenever I’m directly mentioned in Telegram, draft a reply if it needs an answer. Only interrupt me if it’s urgent.">“When I’m mentioned in Telegram, draft a reply.” ${icon('next')}</button><p class="screen-disclaimer">Prototype routines can be tried with sample messages. No live sources are connected.</p>`:`${contextTabs(tab)}<p class="screen-intro">Prepared work, linked to its topic.</p><button class="work-row" data-artifact="proposal"><span class="work-icon">${icon('file')}</span><span><strong>Halcyon proposal</strong><small>${state.shortened?'1 page':'2 pages'} · Leo’s proposal</small></span>${icon('next')}</button><button class="work-row" data-artifact="prep"><span class="work-icon">${icon('file')}</span><span><strong>Rachel & Tom</strong><small>Call prep · Northwind</small></span>${icon('next')}</button>`;
@@ -71,9 +74,12 @@ function openTopicSources(id){
 }
 function resumeTopic(id){
   useTopic(id);closeScreens();state.started=true;
-  const topic=state.topics[id];
-  response(id==='leo'?['sent','done'].includes(state.proposal)?'The proposal is with Leo now. You’re waiting on his reply.':`You chose a small pilot. The ${state.shortened?'one-page':'latest'} proposal is ready; sending still needs your approval. Want to review it?`:id==='hiring'?state.topics.hiring.role?'We were discussing a product designer. Contract or full time is the next question.':'We were exploring a design hire. What role do you have in mind?':topicSummary(id),{context:`${topic.company} · ${topic.title}`,artifact:id==='leo'?'proposal':id==='call'?'prep':null});
+  const topic=state.topics[id],latest=latestTopicMessage(id);
+  state.text=latest.text;state.artifact=latest.artifact||null;state.lastAction=latest.action||null;
+  state.context=`${topic.company} · ${topic.title}`;
+  touchTopic(id);render();saveSession();say(latest.text);
 }
+
 function routineSentence(r){return `${r.source==='Telegram'?'Direct mentions in selected Telegram chats':'Emails in the selected inbox'}${r.person==='Leo'?' from Leo':''} → ${r.action==='draft'?'prepare a reply':'flag for review'}. ${r.notify==='urgent'?'Only interrupt if urgent.':'Bring each match to me.'}`;}
 function beginRoutine(existing=null){
   state.pendingRoutine=existing?{...existing}:{id:`routine-${Date.now()}`,title:'Replies to direct mentions',source:'Telegram',person:'Anyone',action:'draft',notify:'urgent',enabled:true};
@@ -109,6 +115,20 @@ function testRoutine(id){
   openScreen('ROUTINE · SAMPLE','A message comes in.',`<div class="source-quote"><small>Leo · ${esc(r.source)} · sample message</small><p>“Can you confirm the pilot scope, @you?”</p></div>${!r.enabled?'<span class="status-tag paused">Paused</span><p>No work prepared. This routine is paused.</p>':drafted?'<span class="status-tag">Draft prepared</span><h3>Reply, ready for your review</h3><p class="sample-draft">Thanks, Leo. Which part of the pilot scope needs my input?</p>':'<span class="status-tag">Flagged for review</span><p>Leo’s question is saved for you to review.</p>'}${r.enabled?`<p class="screen-disclaimer">${r.notify==='urgent'?'No interruption: the sample has no urgent deadline.':'This match would be brought to you.'} Nothing was sent.</p>`:''}<button class="text-link" data-back-routine="${esc(id)}">Back to the routine ${icon('next')}</button>`,{routine:id});
 }
 function handleOrganization(t,text){
+  if(/(?:show|open|view).*(?:chat |conversation |topic )?history/.test(t)){openConversation();return true;}
+  if(/\bi (?:also )?(?:need|want|have) to\s+/.test(t)&&(!inferTopic(t)||inferTopic(t).startsWith('focus-')||/\b(?:plan|organize|book)\b/.test(t))&&!/whenever|automatically|every time|anytime/.test(t)){
+    const task=text.match(/\bi (?:also )?(?:need|want|have) to\s+(.+?)[.!?]*$/i)?.[1]?.trim();
+    if(task){
+      const title=task.charAt(0).toUpperCase()+task.slice(1);
+      const id=(inferTopic(t)?.startsWith('focus-')?inferTopic(t):null)||`focus-${task.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-$/,'')}`;
+      const isNew=!state.topics[id];
+      const topic=ensureTopic(id,title,'Personal');
+      topic.keywords=(task.toLowerCase().match(/[a-z]{4,}/g)||[]).filter(word=>!['also','need','want','have','plan','make','this','that','with','about','some','something'].includes(word));
+      useTopic(id);state.history.at(-1).topic=id;mode='voice';
+      response(/offsite/.test(t)?'Let’s work through the offsite. Do you have a date and location in mind?':`Let’s work through ${task.replace(/^(plan|prepare|organize|review|arrange)\s+/i,'')}. What’s the first thing we need to decide?`,{context:`${topic.company} · ${topic.title}`});
+      if(isNew)announceTopic(topic.title);return true;
+    }
+  }
   if(/show.*topics|open.*topics|find.*topics/.test(t)){response('Here are the things we’ve been working through. Pick any of them up.',{context:'Your topics'});openTopics();return true;}
   if(/show.*routine|standing instruction|what.*asked.*do/.test(t)){response('Here’s how you’ve asked me to help over time.',{context:'Your routines'});openTopics('routines');return true;}
   if(/undo.*routine|undo.*instruction/.test(t)&&state.undoRoutine){undoRoutine();return true;}
@@ -135,6 +155,7 @@ function handleOrganization(t,text){
   if(/back to|where were we|pick.*back up|tell me about.*proposal|where.*with leo|resume.*leo/.test(t)){
     const id=inferTopic(t)||state.currentTopic;resumeTopic(id);return true;
   }
+  if(/^(?:what|how) about\b|^about\b/.test(t)&&inferTopic(t)){resumeTopic(inferTopic(t));return true;}
   if(/what.*decide|why did we (?:choose|decide)/.test(t)){const topic=state.topics[state.currentTopic];response(topic.decisions.length?topic.decisions.join(' '):'We haven’t settled on a decision yet.',{context:`${topic.company} · ${topic.title}`});return true;}
   if(/(?:let'?s|can we|want to) (?:talk about|discuss|focus on)/.test(t)){
     const match=text.match(/(?:talk about|discuss|focus on)\s+(.+?)[.!?]?$/i);const title=match?.[1].trim();
@@ -148,6 +169,12 @@ function handleOrganization(t,text){
   }
   if(/(?:belongs|move|put|keep).*(?:under|with|to|in).*\b(?:halcyon|northwind|personal)\b/.test(t)){
     const topic=state.topics[state.currentTopic],company=/northwind/.test(t)?'Northwind':/halcyon/.test(t)?'Halcyon':'Personal';topic.company=company;response(`I’ve moved ${topic.title} under ${company}. Its discussion and decisions stay together.`,{context:`${company} · ${topic.title}`});return true;
+  }
+  if(state.currentTopic.startsWith('focus-')&&!/\b(?:show|open|view|history|routine|remind|cancel|stop|pause|repeat|send|approve|source|evidence)\b/.test(t)){
+    const topic=state.topics[state.currentTopic];
+    if(/why|what.*next/.test(t)){response('We’ve just started this topic. Let’s settle the main details first.',{context:`${topic.company} · ${topic.title}`});return true;}
+    topic.notes=topic.notes||[];topic.notes.push(text);
+    response(/offsite/.test(topic.title.toLowerCase())?`${text.replace(/[.!?]+$/,'')}. Roughly how many people should we plan for?`:`I’ve kept that with ${topic.title}. What would you like to settle next?`,{context:`${topic.company} · ${topic.title}`});return true;
   }
   return false;
 }
@@ -175,3 +202,76 @@ document.addEventListener('input',e=>{if(e.target.id==='topic-search')$('#topic-
 document.addEventListener('submit',e=>{if(e.target.id==='routine-form'){e.preventDefault();saveRoutine(e.target);}});
 
 document.addEventListener('change',e=>{const form=e.target.closest('#routine-form');if(!form||!state.pendingRoutine)return;const values=new FormData(form);for(const key of ['source','person','action','notify'])state.pendingRoutine[key]=values.get(key);$('.routine-sentence').textContent=routineSentence(state.pendingRoutine);});
+
+function orderedTopics(){
+  return Object.values(state.topics).sort((a,b)=>{
+    const activity=topic=>topic.updatedAt??Math.max(0,...state.history.filter(m=>m.topic===topic.id).map(m=>m.at||0))+(topic.id==='leo'?3:topic.id==='call'?2:1);
+    return activity(b)-activity(a);
+  });
+}
+function touchTopic(id){
+  if(!state.topics[id])return;
+  state.topicClock=Math.max(Date.now(),(state.topicClock||0)+1);
+  state.topics[id].updatedAt=state.topicClock;
+}
+function latestTopicMessage(id){
+  return state.history.findLast(m=>m.who==='assistant'&&m.topic===id)||{
+    who:'assistant',topic:id,text:topicSummary(id),artifact:id==='leo'?'proposal':id==='call'?'prep':null,seeded:true
+  };
+}
+function canUseFeed(){return !screens.length&&(mode==='voice'||mode==='brief'&&state.started);}
+function browseTopic(direction){
+  if(!canUseFeed())return false;
+  const topics=orderedTopics(),index=/^Your (?:routines|topics)/.test(state.context)?(direction>0?-1:topics.length):topics.findIndex(t=>t.id===state.currentTopic),topic=topics[index+direction];
+  if(!topic)return false;
+  stopMedia();useTopic(topic.id);state.started=true;
+  const latest=latestTopicMessage(topic.id);
+  if(!state.history.some(m=>m.who==='assistant'&&m.topic===topic.id))state.history.push({...latest,at:0});
+  state.text=latest.text;state.artifact=latest.artifact||null;state.lastAction=latest.action||null;
+  state.context=`${topic.company} · ${topic.title}`;
+  render();saveSession();return true;
+}
+function openConversation(){stopMedia();closeScreens();mode='thread';render();saveSession();}
+function returnToLatest(){stopMedia();mode='voice';const latest=/^Your (?:routines|topics)/.test(state.context)?state.history.findLast(m=>m.who==='assistant'&&m.topic===null)||latestTopicMessage(state.currentTopic):latestTopicMessage(state.currentTopic);state.text=latest.text;state.artifact=latest.artifact||null;state.lastAction=latest.action||null;render();saveSession();}
+function topicHeader(history=false){
+  const topic=state.topics[state.currentTopic];
+  const general=/^Your (?:routines|topics)/.test(state.context);
+  return `<div class="voice-topic-header"><div><p>${general?'Personal':esc(topic.company)}</p><button class="topic-title" ${general?`data-context-tab="${state.context.includes('routines')?'routines':'topics'}"`:`data-topic="${esc(topic.id)}"`}>${esc(general?state.context:topic.title)} ${icon('next')}</button></div><button class="history-button" ${history?'data-back-latest':'data-open-history'}>${icon(history?'back':'message')}<span>${history?'Latest':'History'}</span></button></div>`;
+}
+function topicPager(){
+  if(/^Your (?:routines|topics)/.test(state.context))return `<nav class="topic-pager" aria-label="Browse topics"><button class="browse-all-topics" data-context-tab="topics">Browse topics ${icon('next')}</button></nav>`;
+  const topics=orderedTopics(),index=topics.findIndex(t=>t.id===state.currentTopic);
+  return `<nav class="topic-pager" aria-label="Browse topics"><button data-browse-topic="-1" aria-label="Previous topic" ${index===0?'disabled':''}>${icon('chevron-up')}</button><span><b>${index+1} / ${topics.length}</b>Swipe between topics</span><button data-browse-topic="1" aria-label="Next topic" ${index===topics.length-1?'disabled':''}>${icon('chevron-down')}</button></nav>`;
+}
+function announceTopic(title){
+  const status=$('#feed-announcement');status.textContent=`New topic · ${title}`;status.hidden=false;
+  clearTimeout(announceTopic.timer);announceTopic.timer=setTimeout(()=>{status.hidden=true;},3200);
+}
+document.addEventListener('click',e=>{
+  if(e.target.closest('[data-open-history]'))return openConversation();
+  if(e.target.closest('[data-back-latest]'))return returnToLatest();
+  const pager=e.target.closest('[data-browse-topic]');if(pager)browseTopic(Number(pager.dataset.browseTopic));
+});
+let feedPointer=null,lastWheel=0;
+function canBrowseFrom(target){return canUseFeed()&&!target.closest('button,a,input,select,textarea')&&!$('#app-body').classList.contains('feed-scrolls');}
+document.addEventListener('pointerdown',e=>{
+  if(!e.target.closest('#app-body')||!canBrowseFrom(e.target))return;
+  feedPointer={x:e.clientX,y:e.clientY,id:e.pointerId};
+  if(e.pointerType==='mouse')e.preventDefault();
+});
+document.addEventListener('pointerup',e=>{
+  const start=feedPointer;feedPointer=null;if(!start||start.id!==e.pointerId||!canBrowseFrom(e.target))return;
+  const dy=e.clientY-start.y,dx=e.clientX-start.x;
+  if(Math.abs(dy)>55&&Math.abs(dy)>Math.abs(dx)*1.4)browseTopic(dy<0?1:-1);
+});
+document.addEventListener('pointercancel',()=>{feedPointer=null;});
+document.addEventListener('wheel',e=>{
+  if(!e.target.closest('#app-body')||!canBrowseFrom(e.target)||Math.abs(e.deltaY)<12)return;
+  if(Date.now()-lastWheel<650){e.preventDefault();return;}
+  if(browseTopic(e.deltaY>0?1:-1)){lastWheel=Date.now();e.preventDefault();}
+},{passive:false});
+document.addEventListener('keydown',e=>{
+  if(!['ArrowUp','ArrowDown'].includes(e.key)||!canUseFeed()||e.target.closest('input,textarea,select'))return;
+  if(!document.body.classList.contains('focus-mode')&&!e.target.closest('#phone'))return;
+  if(browseTopic(e.key==='ArrowDown'?1:-1))e.preventDefault();
+});

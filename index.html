@@ -21,6 +21,8 @@
     <symbol id="icon-muted" viewBox="0 0 24 24"><path d="m11 4-6 5H2.5v6H5l6 5V4Zm5 5 5 6m0-6-5 6"/></symbol>
     <symbol id="icon-back" viewBox="0 0 24 24"><path d="m14.5 5-7 7 7 7"/></symbol>
     <symbol id="icon-next" viewBox="0 0 24 24"><path d="m9.5 5 7 7-7 7"/></symbol>
+    <symbol id="icon-chevron-up" viewBox="0 0 24 24"><path d="m5 15 7-7 7 7"/></symbol>
+    <symbol id="icon-chevron-down" viewBox="0 0 24 24"><path d="m5 9 7 7 7-7"/></symbol>
     <symbol id="icon-up" viewBox="0 0 24 24"><path d="M12 19V5m-6 6 6-6 6 6"/></symbol>
     <symbol id="icon-message" viewBox="0 0 24 24"><path d="M20.5 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2v-10a9 9 0 0 1 18.5-.5Z"/><path d="M7 10h9m-9 4h6"/></symbol>
     <symbol id="icon-file" viewBox="0 0 24 24"><path d="M14 2.5H6a2 2 0 0 0-2 2v15a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8.5L14 2.5Zm0 0v6h6M8 13h8m-8 4h5"/></symbol>
@@ -47,7 +49,7 @@
       <div class="phone" id="phone">
         <div class="device-status" aria-hidden="true"><span>9:41</span><span class="island"></span><span class="status-icons"><svg aria-hidden="true" class="icon"><use href="#icon-signal"/></svg><svg aria-hidden="true" class="icon"><use href="#icon-wifi"/></svg><svg class="icon battery"><use href="#icon-battery"/></svg></span></div>
         <header class="app-header"><button class="icon-btn" id="open-day" aria-label="Show my day"><svg aria-hidden="true" class="icon"><use href="#icon-calendar"/></svg></button><a class="app-brand" href="./" aria-label="Back to experience study">harness</a><button class="icon-btn" id="open-topics" aria-label="Open topics and routines"><svg aria-hidden="true" class="icon"><use href="#icon-topics"/></svg></button></header>
-        <div class="app-body" id="app-body"></div>
+        <div class="app-body" id="app-body"></div><div id="feed-announcement" class="feed-announcement" role="status" hidden></div>
         <footer class="app-footer">
           <div id="voice-status" class="voice-status" role="status">Ready when you are</div>
           <div class="voice-controls"><button class="icon-btn" id="type-toggle" aria-label="Type instead"><svg aria-hidden="true" class="icon"><use href="#icon-keyboard"/></svg></button><button class="talk-button" id="talk-button"><svg aria-hidden="true" class="icon"><use href="#icon-mic"/></svg><span id="talk-label">Let’s talk</span></button><button class="icon-btn" id="audio-toggle" aria-label="Enable spoken replies" aria-pressed="false"><svg aria-hidden="true" class="icon"><use id="audio-icon" href="#icon-muted"/></svg></button></div>

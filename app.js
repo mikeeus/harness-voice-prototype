@@ -2,14 +2,14 @@
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const modes = {
-  voice: {caption:'01 / Just talk — the screen can stay in your pocket.', observation:'Start here. Test whether one short thought and a natural reply are enough to move work forward.'},
+  voice: {caption:'01 / Just talk — the latest thought, with its topic.', observation:'Swipe up or down between topics. History opens the full discussion. Mention another piece of work to bring a new topic to the front.'},
   thread: {caption:'02 / A conversation — speak, skim, or pick up where you left off.', observation:'The conversation is the memory. Test whether visible history helps you regain context without becoming another feed.'},
   brief: {caption:'03 / The quiet brief — a little orientation before you talk.', observation:'A small amount of structure can reassure. Test whether the glance adds confidence or simply delays the conversation.'}
 };
 const scenarios = {
   morning: {context:'Halcyon · proposal', start:'Morning. Leo’s proposal is the one thing I’d clear first. I’ve drafted it. Want the short version?', note:'The proposal is overdue. A call is at 10. Another decision can wait until this afternoon.', title:'One thing to clear first.', brief:'Leo is waiting on the proposal you promised. I’ve drafted it, ready to review.', bottom:'10:00 · Rachel & Tom\nThis afternoon · Server funds decision', prompts:['Why that first?','Give me the short version','Show me the proposal','What else needs me?']},
   change: {context:'Northwind · your next call', start:'Rachel moved your call to 10:30. That gives you half an hour back. Your prep is ready whenever you want it.', note:'You already know the agenda. Only the time has changed. The assistant should tell you the difference.', title:'Half an hour back.', brief:'Rachel moved your call to 10:30. Same agenda. Your prep is ready.', bottom:'10:30 · Rachel & Tom\nNo other changes need you', prompts:['What changed?','Prep me for the call','Show my day','Remind me before the call']},
-  continuity: {context:'Halcyon · Leo’s proposal', start:'Your one-page proposal is ready. We can pick it up, or talk through something else.', note:'Switch to hiring, discuss the role, then say “Back to Leo.” Each discussion keeps its own context.', title:'Pick up where you left off.', brief:'Leo’s proposal is one page now. A small pilot first, with scope still to agree.', bottom:'Halcyon · Proposal ready\nNorthwind · Hiring, when you’re ready', prompts:["Let’s talk about hiring",'A product designer','Back to Leo','Show my topics','Show my routines']},
+  continuity: {context:'Halcyon · Leo’s proposal', start:'Your one-page proposal is ready. We can pick it up, or talk through something else.', note:'Switch to hiring, discuss the role, then say “Back to Leo.” Each discussion keeps its own context.', title:'Pick up where you left off.', brief:'Leo’s proposal is one page now. A small pilot first, with scope still to agree.', bottom:'Halcyon · Proposal ready\nNorthwind · Hiring, when you’re ready', prompts:["Let’s talk about hiring",'A product designer','I also need to plan the team offsite','Back to Leo','Show my chat history','Show my topics']},
   quiet: {context:'All caught up', start:'Nothing needs you right now. Dana still owes you the data room list. I’m keeping track; you don’t need to chase it today.', note:'No new decision is needed. Waiting on someone else should not become a task for you.', title:'You’re clear for now.', brief:'Nothing needs a decision. I’m keeping an eye on the things you’re waiting for.', bottom:'Waiting on Dana · Data room list\nNext check · Tomorrow morning', prompts:['What am I waiting on?','Don’t remind me unless it’s late','Show my day','Why nothing today?']}
 };
 let state, audio=false, speaking=false, listening=false, recognition=null, speechGeneration=0;
@@ -23,7 +23,7 @@ function reset(){
   stopMedia(); closeScreens(); state={history:[],text:scenarios[scenario].start,context:scenarios[scenario].context,started:false,proposal:'ready',shortened:false,approval:false,draft:"Hi Leo, here’s the proposal I promised, based on the terms we discussed.",reminder:null,quietRule:false,artifact:null,lastAction:null};
   initializeTopics();
   if(scenario==='continuity'){state.shortened=true;state.history.push({who:'user',text:'Make the proposal one page. A small pilot first.',topic:'leo',seeded:true},{who:'assistant',text:'One page, same proposed scope. Commercial terms are still open.',topic:'leo',seeded:true});}
-  state.history.push({who:'assistant',text:state.text,topic:state.currentTopic}); render();saveSession();
+  state.history.push({who:'assistant',text:state.text,topic:state.currentTopic,at:Date.now()});touchTopic(state.currentTopic);render();saveSession();
 }
 function stopSpeech(){speechGeneration++;if('speechSynthesis' in window)window.speechSynthesis.cancel();speaking=false;}
 function stopMedia(){stopSpeech();if(recognition){recognition.abort();recognition=null;}listening=false;}
@@ -39,7 +39,8 @@ function say(text){
 }
 function response(text,{context=state.context,artifact=null,action=null}={}){
   state.text=text;state.context=context;state.artifact=artifact;state.lastAction=action;
-  state.history.push({who:'assistant',text,artifact,action,topic:/^Your (?:topics|routines)/.test(context)?null:state.currentTopic,at:Date.now()});render();saveSession();say(text);
+  const topic=/^Your (?:topics|routines)/.test(context)?null:state.currentTopic;
+  state.history.push({who:'assistant',text,artifact,action,topic,at:Date.now()});if(topic)touchTopic(topic);render();saveSession();say(text);
 }
 function renderControls(message){
   $('#voice-status').textContent=message||(listening?'Listening… tap to stop':speaking?'Speaking… tap to interrupt':audio?'Spoken replies on':'Spoken replies off');
@@ -63,22 +64,29 @@ function render(){
   $('#prompts').innerHTML=prompts.map(p=>`<button class="prompt" data-command="${esc(p)}">${esc(p)}</button>`).join('');
   const body=$('#app-body');
   if(mode==='thread'){
-    body.innerHTML='<p class="thread-date">Wednesday, November 4 · demo day</p>'+state.history.map(m=>`<div class="thread-msg ${m.who}">${m.who==='assistant'?'<span class="thread-who">Harness</span>':''}${esc(m.text)}${m.artifact?artifactLink(m.artifact):''}${m.action==='review'&&state.approval?'<button class="approval-inline" data-open="approval">Review draft ↗</button>':''}</div>`).join('')+receipt();
-    body.scrollTop=body.scrollHeight;
+    const activeTopic=/^Your (?:routines|topics)/.test(state.context)?null:state.currentTopic;
+    const history=state.history.filter(m=>m.topic===activeTopic);
+    body.innerHTML=topicHeader(true)+'<div class="conversation-log">'+(history.length?history:[latestTopicMessage(state.currentTopic)]).map(m=>`<div class="thread-msg ${m.who}">${m.who==='assistant'?'<span class="thread-who">Harness</span>':''}${esc(m.text)}${m.originalText?`<details class="original-utterance"><summary>From a longer message</summary><p>${esc(m.originalText)}</p></details>`:''}${m.artifact?artifactLink(m.artifact):''}${m.action==='review'&&state.approval?'<button class="approval-inline" data-open="approval">Review draft ↗</button>':''}</div>`).join('')+'</div>';
+    const log=$('.conversation-log');log.scrollTop=log.scrollHeight;
   }else if(mode==='brief'&&!state.started){
     const s=scenarios[scenario];
     body.innerHTML=`<div class="brief-view"><p class="brief-date">Wednesday, November 4</p><h2>${s.title}</h2><p>${s.brief}</p><div class="brief-focus"><span class="eyebrow">${proposalMoment?'MY SUGGESTION':scenario==='change'?'WHAT CHANGED':'IN THE BACKGROUND'}</span><p>${proposalMoment?'Let’s get Leo’s proposal off your mind.':scenario==='change'?'Take the time back. I’ll get you ready before the call.':'Dana’s list is on my radar. It can wait until tomorrow.'}</p>${proposalMoment?artifactLink('proposal'):scenario==='change'?artifactLink('prep'):''}</div><div class="brief-bottom">${s.bottom.split('\n').map(esc).join('<br>')}</div></div>`;
   }else{
-    body.innerHTML=`<div class="voice-view"><div class="presence" aria-hidden="true"><img src="assets/symbol-plum.svg" alt=""></div><button class="context-line context-button" ${/^Your routines/.test(state.context)?'data-context-tab="routines"':/^Your topics/.test(state.context)?'data-context-tab="topics"':`data-topic="${esc(state.currentTopic)}"`}>${esc(state.context)} ${icon('next')}</button><p class="spoken-text ${state.text.length>185?'long':''}" aria-live="polite">${esc(state.text)}</p>${state.artifact?artifactLink(state.artifact):''}${state.lastAction==='review'?'<button class="approval-inline" data-open="approval">Review draft ↗</button>':''}${receipt()}</div>`;
+    body.innerHTML=`${topicHeader()}<div class="latest-message"><p class="latest-label">Latest from Harness</p><div class="latest-copy"><p class="spoken-text ${state.text.length>185?'long':''}" aria-live="polite">${esc(state.text)}</p>${state.artifact?artifactLink(state.artifact):''}${state.lastAction==='review'?'<button class="approval-inline" data-open="approval">Review draft ↗</button>':''}${receipt()}</div></div>${topicPager()}`;
+
   }
+  body.classList.toggle('is-feed',mode!=='thread'&&(mode==='voice'||state.started));
+  body.classList.toggle('feed-scrolls',mode!=='thread'&&!!$('.latest-copy')&&$('.latest-copy').scrollHeight>$('.latest-copy').clientHeight+2);
   renderControls();
 }
-function submit(raw){
-  const text=raw.trim();if(!text)return;
+function submit(raw,{originalText=null}={}){
+  let text=raw.trim();if(!text)return;
+  const aside=text.match(/\b(?:oh[, ]+)?i also (?:need|want|have) to\s+/i);
+  if(aside&&aside.index>0){const prefix=text.slice(0,aside.index).replace(/[,.!\s]+$/,'');if(prefix)submit(prefix,{originalText:raw.trim()});originalText=raw.trim();text=text.slice(aside.index);}
   stopMedia();closeScreens();state.started=true;
   const t=text.toLowerCase().replace(/[’]/g,"'");
-  const topic=inferTopic(t);if(topic)useTopic(topic);
-  state.history.push({who:'user',text,topic:/routine|standing instruction|show.*topics|whenever|anytime|every time/.test(t)?null:state.currentTopic,at:Date.now()});
+  const topic=inferTopic(t);if(topic){useTopic(topic);state.context=`${state.topics[topic].company} · ${state.topics[topic].title}`;}
+  state.history.push({who:'user',text,topic:/routine|standing instruction|show.*topics|whenever|anytime|every time/.test(t)?null:state.currentTopic,at:Date.now(),...(originalText?{originalText}: {})});
   if(handleOrganization(t,text))return;
   if(/cancel.*remind|undo.*remind/.test(t)){state.reminder=null;return response('Canceled. I won’t remind you about that.');}
   if(/undo.*preference/.test(t)){state.quietRule=false;return response('Undone. I’ll use the previous reminder preference.');}
