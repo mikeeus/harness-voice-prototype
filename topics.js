@@ -40,7 +40,7 @@ function topicSummary(id){
   if(id==='leo')return ['sent','done'].includes(state.proposal)?'The proposal is sent. Leo has the next step.':state.reminder?'Draft ready. Set aside until after your call.':state.shortened?'One-page draft ready. Sending still needs your approval.':'Draft ready. Pilot scope still needs agreement.';
   if(id==='call')return 'Prep ready. The pilot scope is the decision to make.';
   if(id==='data')return 'Waiting on Dana’s list, due Thursday. No chase needed today.';
-  if(id==='hiring')return state.topics[id].role?`${state.topics[id].role}. Contract or full time is still open.`:'You’re exploring a design hire. The role is still open.';
+  if(id==='hiring'){const topic=state.topics[id];if(topic.decisions.some(d=>d.includes('contract')))return `${topic.role||'Design hire'} · explore a contract role first.`;if(topic.decisions.some(d=>d.includes('full-time')))return `${topic.role||'Design hire'} · explore a full-time role.`;return topic.role?`${topic.role}. Contract or full time is still open.`:'You’re exploring a design hire. The role is still open.';}
   return 'An ongoing discussion. Pick it up whenever you’re ready.';
 }
 function topicStatus(id){return id==='leo'?(['sent','done'].includes(state.proposal)?'Waiting on Leo':'Needs you'):id==='call'?'Prep ready':id==='data'?'Waiting on Dana':'Exploring';}
@@ -76,7 +76,7 @@ function resumeTopic(id){
 }
 function routineSentence(r){return `${r.source==='Telegram'?'Direct mentions in selected Telegram chats':'Emails in the selected inbox'}${r.person==='Leo'?' from Leo':''} → ${r.action==='draft'?'prepare a reply':'flag for review'}. ${r.notify==='urgent'?'Only interrupt if urgent.':'Bring each match to me.'}`;}
 function beginRoutine(existing=null){
-  state.pendingRoutine=existing?{...existing}:{id:'telegram-mentions',title:'Replies to direct mentions',source:'Telegram',person:'Anyone',action:'draft',notify:'urgent',enabled:true};
+  state.pendingRoutine=existing?{...existing}:{id:`routine-${Date.now()}`,title:'Replies to direct mentions',source:'Telegram',person:'Anyone',action:'draft',notify:'urgent',enabled:true};
   openRoutineReview();
 }
 function openRoutineReview(replace=false){
@@ -91,7 +91,7 @@ function saveRoutine(form){
   const index=state.routines.findIndex(x=>x.id===r.id);
   state.undoRoutine={id:r.id,previous:index<0?null:{...state.routines[index]}};
   if(index<0)state.routines.push(r);else state.routines[index]=r;
-  state.pendingRoutine=null;closeScreens();response('Saved. I’ll prepare the work and keep replies as drafts. You can change or pause this whenever you want.',{context:'Your routines'});openRoutine(r.id);saveSession();
+  state.pendingRoutine=null;closeScreens();response(r.enabled?'Saved. I’ll prepare the work and keep replies as drafts. You can change or pause this whenever you want.':'Saved. This routine stays paused. Resume it whenever you’re ready.',{context:'Your routines'});openRoutine(r.id);saveSession();
 }
 function openRoutine(id,replace=false){
   const r=state.routines.find(x=>x.id===id);if(!r)return;
@@ -144,7 +144,7 @@ function handleOrganization(t,text){
   if(state.currentTopic==='hiring'&&/designer|contract|full.time/.test(t)){
     state.topics.hiring.role=/designer/.test(t)?'Product designer':state.topics.hiring.role||'Design hire';
     if(/contract|full.time/.test(t)){const decision=/contract/.test(t)?'Explore a contract role first.':'Explore a full-time role.';if(!state.topics.hiring.decisions.includes(decision))state.topics.hiring.decisions.push(decision);}
-    response(/designer/.test(t)?'A product designer. Are you thinking contract or full time?':'I’ve kept that with the hiring discussion. We can come back to the role when you’re ready.',{context:'Northwind · Design hiring'});return true;
+    response(/designer/.test(t)?'A product designer. Are you thinking contract or full time?':'I’ve kept that with the hiring discussion. We can come back to the role when you’re ready.',{context:`${state.topics.hiring.company} · Design hiring`});return true;
   }
   if(/(?:belongs|move|put|keep).*(?:under|with|to|in).*\b(?:halcyon|northwind|personal)\b/.test(t)){
     const topic=state.topics[state.currentTopic],company=/northwind/.test(t)?'Northwind':/halcyon/.test(t)?'Halcyon':'Personal';topic.company=company;response(`I’ve moved ${topic.title} under ${company}. Its discussion and decisions stay together.`,{context:`${company} · ${topic.title}`});return true;
